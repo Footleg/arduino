@@ -25,9 +25,8 @@
  */
 
 /* NOTE: This code resets the simulation when repeating end conditions occur.
-         The code to detect longer cycle repeating patterns is not complete here
-     so patterns repeating in over 4 cycles will continue forever. I am still
-     testing the code which detects 5-16 cycle patterns.
+         The code detects repeating patterns of up to 24 cycles.
+		 The reason each simulation is terminated is output to the serial console.
 */
 
 #define NO_TO_ZERO_WARNINGS
@@ -42,7 +41,7 @@
 /***** Global Constants *****/
 static uint8_t const gridSize = 16;
 static uint8_t const maxBrightness = 128;
-static uint8_t const maxGap = 16;
+static uint8_t const maxGap = 24;
 
 /***** Global Variables *****/
 UnicornHD unicorn;
@@ -62,7 +61,7 @@ uint8_t repeat2Count = 0;
 uint8_t repeat3Count = 0;
 uint8_t unchangedPopulation[maxGap] = {};
 uint32_t iterations = 0;
-uint32_t iterationsMin = 999999999999;
+uint32_t iterationsMin = 4294967295;
 uint32_t iterationsMax = 0;
 
 CRGB cellColour;
@@ -94,7 +93,23 @@ void setup()
 void loop()
 {
   int8_t x, y, xt, yt, xi, yi, neighbours;
+  uint8_t maxRepeatsCount, maxContributor;
 
+  //Serial.print("Start of loop ");
+  //Serial.println(alive);
+
+  //Get highest repeating frame count for repeating patterns > 5 frames
+  maxRepeatsCount = 0;
+  maxContributor = 0;
+  for(int8_t i = 5; i < maxGap; ++i)
+  {
+    if ( unchangedPopulation[i] > maxRepeatsCount )
+    {
+      maxRepeatsCount = unchangedPopulation[i];
+      maxContributor = i;
+    }
+  }
+  
   /* Reinitialise simulation on the following conditions:
    *  - All cells dead.
    *  - No changes have occurred between consecutive frames (static pattern)
@@ -102,11 +117,11 @@ void loop()
    *  - Pattern cycles between 3 different states 
    *  - Population remains constant for 50 consecutive frames (gliding pattern)
    *    * Allow 150 frames if more than 5 cells as glider may collide with something
-   *  - Populate size repeats over a 4 cycle period for over 40 cycles
+   *  - Pattern cycles over 6-24 frames for over 200 cycles
    */
   if ( (alive == 0) || (unchangedCount > 5 ) || (repeat2Count > 6) || (repeat3Count > 35) 
     || (unchangedPopulation[0] > 150) || ( (unchangedPopulation[0] > 50) && (alive == 5 ) ) 
-    || (unchangedPopulation[3] > 40) )
+    || (unchangedPopulation[3] > 40) || (maxRepeatsCount > 120) )
   {
     //Update min and max iterations counters
     if (iterations > 0)
@@ -136,10 +151,15 @@ void loop()
     else if ( (unchangedPopulation[0] > 50) && (alive == 5 ) )
       Serial.println("Population static over 50 frames with 5 cells exactly");
     else if (unchangedPopulation[3] > 40)
-      Serial.println("Population repeated on 4 step cycle");
+      Serial.println("Population repeated over 4 step cycle 40x");
+    else if (maxRepeatsCount > 120)
+    {
+      Serial.print("Population repeated over ");
+      Serial.print(maxContributor+1);
+      Serial.println(" step cycle 120x");
+    }
     
     initialiseGrid(0);
-
     updatePixels();
     unicorn.Show();
   }
@@ -147,7 +167,6 @@ void loop()
   //Show status of simulation on LEDs
   updatePixels();
   unicorn.Show();
-  
   
   //Apply rules of Game of Life to determine cells dying and being born
   for(y = 0; y < gridSize; ++y)
@@ -195,8 +214,7 @@ void loop()
       }
       else if ( (cells[x][y] == false) && (neighbours == 2) ) 
       {
-        //Empty cell with exactly 3 neighbours (count=2 as didn't count itself
-        //since cell is empty, and counter was initialised as -1)
+        //Empty cell with exactly 3 neighbours (count = 2 as did not count itself so was initialised as -1)
         cellsBorn[x][y] = true; //Spawn
       }
       else if ( (cells[x][y]) && (neighbours > 3) )
@@ -216,11 +234,11 @@ void loop()
     //Show end of population before it gets reset
     updatePixels();
     unicorn.Show();
-    //delay(4000);
+    delay(4000);
   }
 
   iterations++;
-  delay(10); //Use 10 with fade effects on
+  delay(50); //Use 50 with fade effects on
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -228,7 +246,9 @@ void loop()
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void initialiseGrid(uint8_t pattern)
 {
-  uint8_t x, y, col;
+  uint8_t x, y, col, idx;
+  const bool X = true;
+  const bool O = false;
 
   alive = 0;
   iterations = 0;
@@ -245,7 +265,7 @@ void initialiseGrid(uint8_t pattern)
       cellColour = CRGB::Purple;
       break;
     case 1:
-      cellColour = CRGB::Magenta;
+      cellColour = CRGB::Orange;
       break;
     case 2:
       cellColour = CRGB::Blue;
@@ -282,9 +302,74 @@ void initialiseGrid(uint8_t pattern)
   }
   else
   {
+    Serial.print("Fixed pattern: ");
+    Serial.print(pattern);
+    Serial.print(" ");
+    
+        uint8_t pattern1[] = {
+        O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+        O,O,O,O,O,O,O,O,O,O,X,X,O,O,O,O,
+        O,O,O,O,O,O,O,O,O,O,X,X,O,O,O,O,
+        O,O,O,O,O,O,O,O,O,X,O,O,O,O,O,O,
+        O,O,O,O,O,O,O,O,O,O,X,X,X,O,O,O,
+        O,O,O,O,O,O,O,O,O,O,X,X,X,O,O,O,
+        O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+        O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+        O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+        O,O,O,O,O,O,O,O,O,O,X,X,X,O,O,O,
+        O,O,O,O,O,O,O,O,O,O,X,X,X,O,O,O,
+        O,O,O,O,O,O,O,O,O,X,O,O,O,O,O,O,
+        O,O,O,O,O,O,O,O,O,O,X,X,O,O,O,O,
+        O,O,O,O,O,O,O,O,O,O,X,X,O,O,O,O,
+        O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+        O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O };
+
+        uint8_t pattern2[] = {
+        O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+        O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+        O,O,O,O,X,O,O,O,O,O,O,O,X,O,O,O,
+        O,O,O,X,X,X,O,O,O,O,O,X,X,X,O,O,
+        O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+        O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+        O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+        O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+        O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+        O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+        O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+        O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+        O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+        O,O,O,X,X,X,O,O,O,O,O,X,X,X,O,O,
+        O,O,O,O,X,O,O,O,O,O,O,O,X,O,O,O,
+        O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O };
+        
     switch(pattern)
     {
       case 1:
+        
+        for(y = 0; y < gridSize; ++y)
+        {
+          for(x = 0; x < gridSize; ++x)
+          {
+            idx = (15 - y)*16 + x;
+            cells[x][y] = pattern1[idx];
+          }
+        }
+        Serial.print("Case 1: ");
+        break;
+        
+      case 2:
+        Serial.print("Case 2: ");
+        
+        for(y = 0; y < gridSize; ++y)
+        {
+          for(x = 0; x < gridSize; ++x)
+          {
+            idx = (15 - y)*16 + x;
+            cells[x][y] = pattern2[idx];
+          }
+        }
+        
+        /*
         cells[6][4] = true;
         cells[4][5] = true;
         cells[8][5] = true;
@@ -296,6 +381,8 @@ void initialiseGrid(uint8_t pattern)
         cells[7][8] = true;
         cells[8][8] = true;
         cells[9][8] = true;
+        */
+        Serial.print("Case 2 end: ");
         break;
       default:
         cells[7][6] = true;
@@ -303,6 +390,7 @@ void initialiseGrid(uint8_t pattern)
         cells[8][7] = true;
         cells[5][8] = true;
         cells[9][8] = true;
+        Serial.print("Case Default: ");
         break;
     }
 
@@ -314,6 +402,8 @@ void initialiseGrid(uint8_t pattern)
         if (cells[x][y]) alive++;
       }
     }
+    Serial.print("Alive: ");
+    Serial.println(alive);
   }
 
 }
@@ -324,7 +414,7 @@ void initialiseGrid(uint8_t pattern)
 void fadeInChanges()
 {
   uint8_t i, x, y;
-  const uint8_t fadeSteps = 20; //Controls speed of simulation. Around 24 steps is reasonable speed.
+  const uint8_t fadeSteps = 18; //Controls speed of simulation. Around 24 steps is reasonable speed.
   const uint8_t halfSteps = fadeSteps / 2; 
   uint16_t idx = 0;
   CRGB colourB, colourD;
@@ -451,17 +541,17 @@ void applyChanges()
     ++unchangedPopulation[0];
   else
     unchangedPopulation[0] = 0;
-  
+
   //Check for repeating population cycles
   bool gapCheck = false;
   for (gap = 4; gap < maxGap+1; ++gap)
   {
     for (i = 1; i < 48/gap; ++i)
     {
-      popChk = popCursor - 1 - (gap * i);
+      
       for (j = 0; j < gap; ++j)
       {
-        popChk -= j;
+        popChk = popCursor - 1 - (gap * i) - j;
         if (popChk < 0) popChk += 48;
         prevPopChk = popChk + (gap * i);
         if (prevPopChk > 47) prevPopChk -= 48;
@@ -480,13 +570,9 @@ void applyChanges()
     if (gapCheck == true) break;
   }
 
-  if (gapCheck == true)
-  {
-    ++unchangedPopulation[gap-1];
-  }
-  else
-    unchangedPopulation[gap-1] = 0;
-    
+  if (gapCheck == true) ++unchangedPopulation[gap-1];
+  else unchangedPopulation[gap-1] = 0;
+  
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
