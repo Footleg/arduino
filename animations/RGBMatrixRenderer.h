@@ -15,10 +15,10 @@ class RGBMatrixRenderer
     //functions
     public:
         RGBMatrixRenderer(int, int);
-        ~RGBMatrixRenderer();
+        virtual ~RGBMatrixRenderer();
         int getGridWidth();
         int getGridHeight();
-        virtual void setPixel(int, int, uint8_t, uint8_t, uint8_t);
+        virtual void setPixel(int, int, uint8_t, uint8_t, uint8_t) = 0;
         void setRandomColour();
     protected:
     private:

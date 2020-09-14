@@ -60,7 +60,7 @@ class Animation : public ThreadedCanvasManipulator, public RGBMatrixRenderer {
             : ThreadedCanvasManipulator(m), RGBMatrixRenderer{width,height}, delay_ms_(delay_ms), animator(*this)
         {}
 
-        ~Animation(){}
+        virtual ~Animation(){}
 
         void Run() {
             while (running() && !interrupt_received) {

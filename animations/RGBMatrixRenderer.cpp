@@ -1,7 +1,6 @@
 #include "RGBMatrixRenderer.h"
 #include <stdint.h>
 #include <iostream>
-using namespace std;
 
 // default constructor
 RGBMatrixRenderer::RGBMatrixRenderer(int width, int height)
@@ -12,11 +11,6 @@ RGBMatrixRenderer::RGBMatrixRenderer(int width, int height)
 RGBMatrixRenderer::~RGBMatrixRenderer()
 {
 } //~RGBMatrixRenderer
-
-void RGBMatrixRenderer::setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b)
-{
-    cout << "Base setPixel" << endl;
-}
 
 int RGBMatrixRenderer::getGridWidth()
 {
@@ -51,6 +45,6 @@ void RGBMatrixRenderer::setRandomColour()
       }
     }
     
-    //cout << "New RGB " << r << "," << g << "," << b << endl;
+    fprintf(stderr, "%s  %d %s  %d %s %d %s", "New RGB ", r, ",",  g, ",",  b, "\n" );
 
 }
