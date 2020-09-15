@@ -53,37 +53,76 @@ void Crawler::runCycle()
 {
     //Set current position pixel
     renderer.setPixel(x, y, renderer.r, renderer.g, renderer.b);
-    
-    //Update direction
-    int c = rand()%8;
-    switch(c) {
-        case 0: //Turn left
-            direction--;
-            break;
-        case 1: //Turn right
-            direction++;
-            break;
 
-    }
-    if (direction > 3)
-        direction = 0;
-    else if (direction < 0)
-        direction = 3;
-
+    //Clear pixels around direction of travel
     switch(direction) {
         case 0: //Up
-            y = renderer.changePositionY(y,-1);
+            renderer.setPixel(renderer.newPositionX(x,-1,false), y, 0, 0, 0);
+            renderer.setPixel(renderer.newPositionX(x,1,false), y, 0, 0, 0);
+            renderer.setPixel(renderer.newPositionX(x,-1), renderer.newPositionY(y,1), 0, 0, 0);
+            renderer.setPixel(renderer.newPositionX(x,1), renderer.newPositionY(y,1), 0, 0, 0);
+            renderer.setPixel(x, renderer.newPositionY(y,1), 0, 0, 0);
             break;
         case 1: //Right
-            x = renderer.changePositionX(x,1);
+            renderer.setPixel(x, renderer.newPositionY(y,-1), 0, 0, 0);
+            renderer.setPixel(x, renderer.newPositionY(y,1), 0, 0, 0);
+            renderer.setPixel(renderer.newPositionX(x,1), renderer.newPositionY(y,-1), 0, 0, 0);
+            renderer.setPixel(renderer.newPositionX(x,1), renderer.newPositionY(y,1), 0, 0, 0);
+            renderer.setPixel(renderer.newPositionX(x,1), y, 0, 0, 0);
             break;
         case 2: //Down
-            y = renderer.changePositionY(y,1);
+            renderer.setPixel(renderer.newPositionX(x,-1,false), y, 0, 0, 0);
+            renderer.setPixel(renderer.newPositionX(x,1,false), y, 0, 0, 0);
+            renderer.setPixel(renderer.newPositionX(x,-1), renderer.newPositionY(y,-1), 0, 0, 0);
+            renderer.setPixel(renderer.newPositionX(x,1), renderer.newPositionY(y,-1), 0, 0, 0);
+            renderer.setPixel(x, renderer.newPositionY(y,-1), 0, 0, 0);
             break;
         case 3: //Left
-            x = renderer.changePositionX(x,-1);
+            renderer.setPixel(x, renderer.newPositionY(y,-1), 0, 0, 0);
+            renderer.setPixel(x, renderer.newPositionY(y,1), 0, 0, 0);
+            renderer.setPixel(renderer.newPositionX(x,-1), renderer.newPositionY(y,-1), 0, 0, 0);
+            renderer.setPixel(renderer.newPositionX(x,-1), renderer.newPositionY(y,1), 0, 0, 0);
+            renderer.setPixel(renderer.newPositionX(x,-1), y, 0, 0, 0);
             break;
     }
+    
+    //Update direction if more than 1 step since last change
+    dirChg++;
+    if (dirChg > 1) {
+        int c = rand()%8;
+        switch(c) {
+            case 0: //Turn left
+                direction--;
+                dirChg = 0;
+                break;
+            case 1: //Turn right
+                direction++;
+                dirChg = 0;
+                break;
+
+        }
+        if (direction > 3)
+            direction = 0;
+        else if (direction < 0)
+            direction = 3;
+    }
+
+    //Update postion
+    switch(direction) {
+        case 0: //Up
+            y = renderer.newPositionY(y,1);
+            break;
+        case 1: //Right
+            x = renderer.newPositionX(x,1);
+            break;
+        case 2: //Down
+            y = renderer.newPositionY(y,-1);
+            break;
+        case 3: //Left
+            x = renderer.newPositionX(x,-1);
+            break;
+    }
+    //fprintf(stderr, "%s %d %s %d %s", "Pos: ", x, ",",  y, "\n" );
 
     //Update colour every 50 steps
     colChg++;

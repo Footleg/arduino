@@ -45,12 +45,12 @@ void RGBMatrixRenderer::setRandomColour()
         }
     }
     
-    fprintf(stderr, "%s  %d %s  %d %s %d %s", "New RGB ", r, ",",  g, ",",  b, "\n" );
+    fprintf(stderr, "%s %d %s %d %s %d %s", "New RGB ", r, ",",  g, ",",  b, "\n" );
 
 }
 
 //Method to update a grid coordinate while keeping on the matrix, with optional wrapping
-int RGBMatrixRenderer::changePosition(int position, int increment, int dimension, bool wrap)
+int RGBMatrixRenderer::newPosition(int position, int increment, int dimension, bool wrap)
 {
     int newPos = position + increment;
 
@@ -63,21 +63,21 @@ int RGBMatrixRenderer::changePosition(int position, int increment, int dimension
     }
     else
     {
-        if (newPos >= dimension)
-            newPos = dimension - 1;
-        else if (newPos >= dimension)
+        if (newPos < 0)
             newPos = 0;
+        else if (newPos >= dimension)
+            newPos = dimension - 1;
     }
     
     return newPos;
 }
 
-int RGBMatrixRenderer::changePositionX(int x, int increment, bool wrap = true)
+int RGBMatrixRenderer::newPositionX(int x, int increment, bool wrap)
 {
-    return changePosition(x, increment, gridWidth, wrap);
+    return newPosition(x, increment, gridWidth, wrap);
 }
 
-int RGBMatrixRenderer::changePositionY(int y, int increment, bool wrap = true)
+int RGBMatrixRenderer::newPositionY(int y, int increment, bool wrap)
 {
-    return changePosition(y, increment, gridHeight, wrap);
+    return newPosition(y, increment, gridHeight, wrap);
 }
