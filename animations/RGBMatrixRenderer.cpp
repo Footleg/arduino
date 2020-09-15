@@ -30,8 +30,8 @@
 #include <iostream>
 
 // default constructor
-RGBMatrixRenderer::RGBMatrixRenderer(int width, int height)
-    : gridWidth(width), gridHeight(height)
+RGBMatrixRenderer::RGBMatrixRenderer(int width, int height, int maxBrightness)
+    : gridWidth(width), gridHeight(height), maxBrightness(maxBrightness)
 {} //RGBMatrixRenderer
 
 // default destructor
@@ -49,15 +49,21 @@ int RGBMatrixRenderer::getGridHeight()
     return gridHeight;
 }
 
+uint8_t RGBMatrixRenderer::getMaxBrightness()
+{
+    return maxBrightness;
+}
+
 void RGBMatrixRenderer::setRandomColour()
 {
     // Init colour randomly
-    r = rand()%255;
-    g = rand()%255;
-    b = rand()%255;
+    r = rand()%maxBrightness;
+    g = rand()%maxBrightness;
+    b = rand()%maxBrightness;
+    int minBrightness = maxBrightness * 3 / 4;
     
     //Prevent colours being too dim
-    if (r<150 && g<150 && b<150) {
+    if (r<minBrightness && g<minBrightness && b<minBrightness) {
         int c = rand()%3;
         switch (c) {
         case 0:
@@ -107,4 +113,13 @@ int RGBMatrixRenderer::newPositionX(int x, int increment, bool wrap)
 int RGBMatrixRenderer::newPositionY(int y, int increment, bool wrap)
 {
     return newPosition(y, increment, gridHeight, wrap);
+}
+
+uint8_t RGBMatrixRenderer::blendColour(uint8_t start, uint8_t end, uint8_t step, uint8_t steps)
+{
+  
+  uint8_t blend = start + (end - start) * step / steps;
+
+  return blend;
+
 }

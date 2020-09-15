@@ -38,17 +38,19 @@ class RGBMatrixRenderer
         int gridWidth;
         int gridHeight;
     private:
-
+        int maxBrightness;
     //functions
     public:
-        RGBMatrixRenderer(int, int);
+        RGBMatrixRenderer(int, int, int=255);
         virtual ~RGBMatrixRenderer();
         int getGridWidth();
         int getGridHeight();
+        uint8_t getMaxBrightness();
         virtual void setPixel(int, int, uint8_t, uint8_t, uint8_t) = 0;
         void setRandomColour();
         int newPositionX(int,int,bool=true);
         int newPositionY(int,int,bool=true);
+        uint8_t blendColour(uint8_t,uint8_t,uint8_t,uint8_t);
     protected:
     private:
         int newPosition(int,int,int,bool);
