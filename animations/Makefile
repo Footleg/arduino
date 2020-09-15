@@ -1,7 +1,7 @@
 CFLAGS=-Wall -O3 -g -Wextra -Wno-unused-parameter
 CXXFLAGS=$(CFLAGS)
-OBJECTS=RGBMatrixRenderer.o crawler.o simplecrawl.o 
-BINARIES=simplecrawler
+OBJECTS=RGBMatrixRenderer.o golife.o gol.o crawler.o simplecrawl.o 
+BINARIES=gol simplecrawler
 
 # Where our library resides. You mostly only need to change the
 # RGB_LIB_DISTRIBUTION, this is where the library is checked out.
@@ -16,6 +16,8 @@ all : $(BINARIES)
 
 $(RGB_LIBRARY): FORCE
 	$(MAKE) -C $(RGB_LIBDIR)
+gol : RGBMatrixRenderer.o golife.o gol.o 
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 simplecrawler : RGBMatrixRenderer.o crawler.o simplecrawl.o 
 	$(CXX) -o $@ $^ $(LDFLAGS)
