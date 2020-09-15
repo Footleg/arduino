@@ -35,8 +35,6 @@ class Crawler
         int y;
         int direction;
         int colChg = 0;
-        int gridWidth;
-        int gridHeight;
     //functions
     public:
         Crawler(RGBMatrixRenderer&);

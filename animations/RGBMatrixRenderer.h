@@ -20,7 +20,9 @@ class RGBMatrixRenderer
         int getGridHeight();
         virtual void setPixel(int, int, uint8_t, uint8_t, uint8_t) = 0;
         void setRandomColour();
+        int changePositionX(int,int,bool=true);
+        int changePositionY(int,int,bool=true);
     protected:
     private:
-
+        int changePosition(int,int,int,bool);
 }; //RGBMatrixRenderer

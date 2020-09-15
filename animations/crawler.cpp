@@ -30,25 +30,17 @@
 Crawler::Crawler(RGBMatrixRenderer &renderer_)
     : renderer(renderer_)
 {
-    // Store grid size
-    gridWidth = renderer.getGridWidth();
-    gridHeight = renderer.getGridHeight();
-
     srand(time(NULL));
 
     //Pick random start point
-    x = rand()%gridWidth;
-    y = rand()%gridHeight;
+    x = rand()%renderer.getGridWidth();
+    y = rand()%renderer.getGridHeight();
 
     //Start random direction
     direction = rand()%4;
 
     //Initial random colour
     renderer.setRandomColour();
-
-    std::cout << "Starting position " << x << "," << y << std::endl;
-    std::cout << "Starting direction " << direction << std::endl;
-
 } //Crawler
 
 // default destructor
@@ -80,20 +72,16 @@ void Crawler::runCycle()
 
     switch(direction) {
         case 0: //Up
-            y--;
-            if (y < 0) y = gridHeight - 1;
+            y = renderer.changePositionY(y,-1);
             break;
         case 1: //Right
-            x++;
-            if (x >= gridWidth) x = 0;
+            x = renderer.changePositionX(x,1);
             break;
         case 2: //Down
-            y++;
-            if (y >= gridHeight) y = 0;
+            y = renderer.changePositionY(y,1);
             break;
         case 3: //Left
-            x--;
-            if (x < 0) x = gridWidth - 1;
+            x = renderer.changePositionX(x,-1);
             break;
     }
 
