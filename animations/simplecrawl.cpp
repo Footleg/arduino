@@ -1,5 +1,5 @@
 /**************************************************************************************************
- * This is a template to demonstrate how to implement an animator class with the RGB matrix library
+ * This is an example to demonstrate using an animator class with the RGB matrix library
  * from https://github.com/hzeller/rpi-rgb-led-matrix
  *
  * Based on the public domain demo example file by Henner Zeller, and extended by
@@ -17,14 +17,15 @@
  * GNU General Public License for more details.
  * 
  * You should have received a copy of the GNU General Public License
- * along with Cave Converter.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this software.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #include "led-matrix.h"
 #include "threaded-canvas-manipulator.h"
 #include "pixel-mapper.h"
 #include "graphics.h"
 
-#include "crawler.h"
+#include "crawler.h" //This is the animation class used to generate output for the display
 
 #include <assert.h>
 #include <getopt.h>

@@ -2,9 +2,9 @@
  * Simple Crawler animator class 
  * 
  * Generates a simple animation starting at a random point in the grid, and crawling across the
- * grid at random. This is a simple example of an animator class where the RGB matrix hardware
- * rendering is passed in, so it can be used with any RGB array display by writing an 
- * implementation of a renderer class to set pixels/LED colours on the hardware.
+ * grid at random. This is a simple example of a reusable animator class where the RGB matrix
+ * hardware rendering class is passed in, so it can be used with any RGB array display by writing 
+ * an implementation of a renderer class to set pixels/LED colours on the hardware.
  *
  * Copyright (C) 2020 Paul Fretwell - aka 'Footleg'
  * 
@@ -19,7 +19,7 @@
  * GNU General Public License for more details.
  * 
  * You should have received a copy of the GNU General Public License
- * along with Cave Converter.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this software.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "crawler.h"
