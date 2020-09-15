@@ -30,8 +30,6 @@
 Crawler::Crawler(RGBMatrixRenderer &renderer_)
     : renderer(renderer_)
 {
-    srand(time(NULL));
-
     //Pick random start point
     x = rand()%renderer.getGridWidth();
     y = rand()%renderer.getGridHeight();

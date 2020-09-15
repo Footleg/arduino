@@ -101,6 +101,8 @@ static int usage(const char *progname) {
 int main(int argc, char *argv[]) {
     int runtime_seconds = -1;
     int scroll_ms = 30;
+ 
+   srand(time(NULL));
 
     RGBMatrix::Options matrix_options;
     rgb_matrix::RuntimeOptions runtime_opt;
