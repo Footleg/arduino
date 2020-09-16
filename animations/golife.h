@@ -29,6 +29,14 @@
 		 The reason each simulation is terminated is output to stderr.
 */
 
+#if defined(ARDUINO) && ARDUINO >= 100
+#include "Arduino.h"
+#elif defined(ARDUINO)
+#include "WProgram.h"
+#else
+#include <stdio.h>
+#endif
+
 #include "RGBMatrixRenderer.h"
 
 class GameOfLife
@@ -45,7 +53,7 @@ class GameOfLife
         static uint8_t const CELL_PREV3 = 0x08;
         static uint8_t const CELL_BIRTH = 0x10;
         static uint8_t const CELL_DEATH = 0x20;
-        int delay;
+        int delayms;
         uint8_t fadeSteps;
         RGBMatrixRenderer &renderer;
         uint8_t** cells; //8bits representing [null,null,deaths,births,prev3,prev2,prev1,alive]

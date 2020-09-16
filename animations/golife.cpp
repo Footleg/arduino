@@ -31,9 +31,6 @@
 
 #include "golife.h"
 
-#include <iostream>
-#include <unistd.h>
-
 // default constructor
 GameOfLife::GameOfLife(RGBMatrixRenderer &renderer_, uint8_t fadeSteps_, int delay_)
     : renderer(renderer_)
@@ -46,7 +43,7 @@ GameOfLife::GameOfLife(RGBMatrixRenderer &renderer_, uint8_t fadeSteps_, int del
 
     //Initialise member variables
     fadeSteps = fadeSteps_;
-    delay = delay_;
+    delayms = delay_;
 
     panelSize = renderer.getGridHeight();
     if (renderer.getGridWidth() < panelSize)
@@ -102,53 +99,47 @@ void GameOfLife::runCycle()
 
         }
         //Debug end condition detected
-        std::string terminalCause;
+        char msgEnd[80];
         if (alive == 0)
-            terminalCause = "All died\n";
+            sprintf(msgEnd, "All died\n");
         else if (unchangedCount > 5 )
-            terminalCause = "Static pattern for 5 frames\n";
+            sprintf(msgEnd, "Static pattern for 5 frames\n");
         else if (repeat2Count > 6)
-            terminalCause = "Pattern repeated over 2 frames\n";
+            sprintf(msgEnd, "Pattern repeated over 2 frames\n");
         else if (repeat3Count > 35)
-            terminalCause = "Pattern repeated over 3 frames\n";
+            sprintf(msgEnd, "Pattern repeated over 3 frames\n");
         else if (unchangedPopulation[0] > panelSize*10)
         {
-            terminalCause = "Population static over ";
-            terminalCause += std::to_string(panelSize*10);
-            terminalCause += " frames\n";
+            sprintf(msgEnd, "Population static over %d %s", (panelSize*10), "frames\n");
         }
         else if ( (unchangedPopulation[0] > panelSize*4) && (alive == 5 ) )
         {
-            terminalCause = "Population static over ";
-            terminalCause += std::to_string(panelSize*4);
-            terminalCause += " frames with 5 cells exactly\n";
+            sprintf(msgEnd, "Population static over %d %s", (panelSize*4), "frames with 5 cells exactly\n");
         }
         else if (unchangedPopulation[3] > panelSize*3) 
         {
-            terminalCause = "Population repeated over 4 step cycle ";
-            terminalCause += std::to_string(panelSize*3);
-            terminalCause += "x\n";
+            sprintf(msgEnd, "Population repeated over 4 step cycle %d %s", (panelSize*3), "x\n");
         }
         else if (maxRepeatsCount > 150)
         {
-            terminalCause = "Population repeated over ";
-            terminalCause += std::to_string(maxContributor+1);
-            terminalCause += " step cycle 120x";
+            sprintf(msgEnd, "Population repeated over %d %s", (maxContributor+1), "step cycle 150x\n");
         }
-        fprintf(stderr,"Pattern terminated after %d iterations (min: %d, max: %d): %s",
-                iterations, iterationsMin, iterationsMax, const_cast<char*>(terminalCause.c_str()));
         
+        char msg[255];
+        sprintf(msg, "Pattern terminated after %lu iterations (min: %lu, max: %lu): %s",
+                iterations, iterationsMin, iterationsMax, msgEnd);
+        renderer.outputMessage(msg);
+
         initialiseGrid(0);
         
     }
 
-    //fprintf(stderr, "Iteration %d alive=%d\n", iterations, alive);
-     if ((delay < 5) && ( (alive == 0) || (unchangedCount > 5 ) || (repeat2Count > 6) || (repeat3Count > 10) 
+    if ((delayms < 5) && ( (alive == 0) || (unchangedCount > 5 ) || (repeat2Count > 6) || (repeat3Count > 10) 
         || (unchangedPopulation[0] > 10)  
         || (unchangedPopulation[3] > 10) || (maxRepeatsCount > 20) ) )
     {
         //Debug delay
-        usleep(100 * 1000);
+        renderer.msSleep(100);
     }
 
     //Apply rules of Game of Life to determine cells dying and being born
@@ -193,14 +184,7 @@ void GameOfLife::runCycle()
         }
     }
 
-    /* /Debug info
-    for (int x=0;x<3;x++) {
-        for (int y=0;y<3;y++) {
-            fprintf(stderr,"Cell [%d,%d] value %d, alive %d, ", x, y, cells[x][y], (cells[x][y] & CELL_ALIVE) );
-            fprintf(stderr,"birth %d, ", (cells[x][y] & CELL_BIRTH) );
-            fprintf(stderr,"death %d\n", (cells[x][y] & CELL_DEATH) );
-        }
-    } */
+    //Fade cells in/out for births/deaths if fade steps set
     if (fadeSteps > 1)
         fadeInChanges();
 
@@ -209,7 +193,7 @@ void GameOfLife::runCycle()
     if (alive == 0)
     {
       //Pause to show end of population before it gets reset
-      usleep(4000); 
+      renderer.msSleep(4000); 
     }
 
     iterations++;
@@ -246,7 +230,7 @@ void GameOfLife::initialiseGrid(uint8_t pattern)
         {
             for(int x = 0; x < renderer.getGridWidth(); ++x)
             {
-                uint8_t randNumber = rand()%100;
+                uint8_t randNumber = renderer.random_uint(0,100);
                 if (randNumber < 15)
                 {
                     cells[x][y] = CELL_ALIVE;
@@ -261,9 +245,6 @@ void GameOfLife::initialiseGrid(uint8_t pattern)
             }
         }
     }
-
-    //Debug info
-    //fprintf(stderr,"\nCell [1,1] is %d\n", (cells[1][1] & CELL_ALIVE) );
 
 }
 
@@ -402,7 +383,7 @@ void GameOfLife::fadeInChanges()
     uint8_t dR;
     uint8_t dG;
     uint8_t dB;
-    int fadeDelay = delay;
+    int fadeDelay = delayms;
 
     for(int i = 1; i < fadeSteps+1; ++i)
     {
@@ -444,7 +425,8 @@ void GameOfLife::fadeInChanges()
             }
         }
         
-        if (delay * fadeSteps > 1000) fadeDelay = 1000 / fadeSteps;
-        usleep(fadeDelay * 1000);
+        if (delayms * fadeSteps > 1000) fadeDelay = 1000 / fadeSteps;
+        renderer.showPixels();
+        renderer.msSleep(fadeDelay);
     }
 }

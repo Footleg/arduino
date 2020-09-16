@@ -26,8 +26,6 @@
  */
 
 #include "RGBMatrixRenderer.h"
-#include <stdint.h>
-#include <iostream>
 
 // default constructor
 RGBMatrixRenderer::RGBMatrixRenderer(int width, int height, int maxBrightness)
@@ -57,14 +55,14 @@ uint8_t RGBMatrixRenderer::getMaxBrightness()
 void RGBMatrixRenderer::setRandomColour()
 {
     // Init colour randomly
-    r = rand()%maxBrightness;
-    g = rand()%maxBrightness;
-    b = rand()%maxBrightness;
+    r = random_uint(0,maxBrightness);
+    g = random_uint(0,maxBrightness);
+    b = random_uint(0,maxBrightness);
     int minBrightness = maxBrightness * 3 / 4;
     
     //Prevent colours being too dim
     if (r<minBrightness && g<minBrightness && b<minBrightness) {
-        int c = rand()%3;
+        int c = random_uint(0,3);
         switch (c) {
         case 0:
             r = 200;
@@ -78,7 +76,11 @@ void RGBMatrixRenderer::setRandomColour()
         }
     }
     
-    fprintf(stderr, "%s %d %s %d %s %d %s", "New RGB ", r, ",",  g, ",",  b, "\n" );
+    //This method for string concatenation was used as it compiles on both g++ on Linux
+    //and arduino platforms
+    char msg[32];
+    sprintf(msg, "New RGB colour  %d, %d, %d\n", r,  g, b);
+    outputMessage(msg);
 
 }
 

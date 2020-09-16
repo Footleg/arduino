@@ -73,15 +73,23 @@ class Animation : public ThreadedCanvasManipulator, public RGBMatrixRenderer {
         virtual void setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b) 
         {
             canvas()->SetPixel(x, gridHeight - y - 1, r, g, b);
-            
-            if (r+g+b == 0) {
-                //fprintf(stderr, "Clear %d,%d;", x, y);
-            }
-            else {
-                //fprintf(stderr, "Set   %d,%d;", x, y);
-            }
         }
 
+        virtual void showPixels() {
+            //Nothing to do for RGB matrix type displays as pixel changes are shown immediately
+        }
+
+        virtual void outputMessage(char msg[]) {
+            fprintf(stderr,msg);
+        }
+        
+        virtual void msSleep(int delay_ms) {
+            usleep(delay_ms * 1000);
+        }
+
+        virtual uint8_t random_uint(uint8_t a, uint8_t b) {
+            return a + rand()%(b-a);
+        }
 
     private:
         int delay_ms_;

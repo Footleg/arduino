@@ -25,7 +25,15 @@
  * along with this software.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#if defined(ARDUINO) && ARDUINO >= 100
+#include "Arduino.h"
+#elif defined(ARDUINO)
+#include "WProgram.h"
+#else
 #include <stdint.h>
+#include <stdio.h>
+#endif
+
 
 class RGBMatrixRenderer
 {
@@ -39,6 +47,7 @@ class RGBMatrixRenderer
         int gridHeight;
     private:
         int maxBrightness;
+        
     //functions
     public:
         RGBMatrixRenderer(int, int, int=255);
@@ -47,6 +56,10 @@ class RGBMatrixRenderer
         int getGridHeight();
         uint8_t getMaxBrightness();
         virtual void setPixel(int, int, uint8_t, uint8_t, uint8_t) = 0;
+        virtual void showPixels() = 0;
+        virtual void msSleep(int) = 0;
+        virtual void outputMessage(char[]) = 0;
+        virtual uint8_t random_uint(uint8_t,uint8_t) = 0;
         void setRandomColour();
         int newPositionX(int,int,bool=true);
         int newPositionY(int,int,bool=true);
