@@ -68,7 +68,7 @@ void GameOfLife::runCycle()
     //Get highest repeating frame count for repeating patterns > 5 frames
     maxRepeatsCount = 0;
     maxContributor = 0;
-    for(int8_t i = 5; i < maxRepeatCycle; ++i)
+    for(int8_t i = 4; i < maxRepeatCycle; ++i)
     {
         if ( unchangedPopulation[i] > maxRepeatsCount )
         {
@@ -202,7 +202,7 @@ void GameOfLife::runCycle()
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Initialise Grid
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-void GameOfLife::initialiseGrid(uint8_t pattern)
+void GameOfLife::initialiseGrid(uint8_t patternIdx)
 {
     const bool X = true;
     const bool O = false;
@@ -224,7 +224,7 @@ void GameOfLife::initialiseGrid(uint8_t pattern)
             renderer.setRandomColour();
     }
 
-    if (pattern == 0) {
+    if (patternIdx == 0) {
         //Random
         for(int y = 0; y < renderer.getGridHeight(); ++y)
         {
@@ -245,6 +245,194 @@ void GameOfLife::initialiseGrid(uint8_t pattern)
             }
         }
     }
+    else
+    {
+        bool pattern[256] = {O};
+
+        
+        switch(patternIdx)
+        {
+            case 1:
+            {
+                bool patternAlt[] = {
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,X,X,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,X,X,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,X,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,X,X,X,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,X,X,X,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,X,X,X,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,X,X,X,O,O,O,
+                O,O,O,O,O,O,O,O,O,X,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,X,X,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,X,X,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O };
+                
+                for (int i=0; i < 256; i++) pattern[i] = patternAlt[i];
+            }
+            break;
+
+            case 2:
+            {
+                bool patternAlt[] = {
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,X,O,O,O,O,O,O,O,X,O,O,O,
+                O,O,O,X,X,X,O,O,O,O,O,X,X,X,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,X,X,X,O,O,O,O,O,X,X,X,O,O,
+                O,O,O,O,X,O,O,O,O,O,O,O,X,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O };
+
+                for (int i=0; i < 256; i++) pattern[i] = patternAlt[i];                    
+            }
+            break;
+
+            case 3:
+            {
+                bool patternAlt[] = {
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,X,X,X,O,X,O,O,O,O,O,O,
+                O,O,O,O,O,X,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,X,X,O,O,O,O,O,O,
+                O,O,O,O,O,O,X,X,O,X,O,O,O,O,O,O,
+                O,O,O,O,O,X,O,X,O,X,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O };
+
+                for (int i=0; i < 256; i++) pattern[i] = patternAlt[i];
+            }
+            break;
+                
+            case 4:
+            {
+                bool patternAlt[] = {
+                O,O,O,O,X,X,X,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,X,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,X,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,X,X,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,X,O,O,X,O,O,O,O,O,O,
+                O,O,O,O,O,X,O,O,O,O,X,O,O,O,O,O,
+                O,O,O,O,X,O,O,O,O,O,O,X,O,O,O,O,
+                O,O,O,O,X,O,O,O,O,O,O,X,O,O,O,O,
+                O,O,O,O,O,X,O,O,O,O,X,O,O,O,O,O,
+                O,O,O,O,O,O,X,O,O,X,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,X,X,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,X,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,X,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,X,X,X,O,O,O,O };
+
+                for (int i=0; i < 256; i++) pattern[i] = patternAlt[i];
+            }
+            break;
+                
+            case 5:
+            {
+                bool patternAlt[] = {
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,X,X,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,X,O,O,X,O,O,O,O,O,O,
+                O,O,O,O,O,X,O,O,O,O,X,O,O,O,O,O,
+                O,O,O,O,X,O,O,O,O,O,O,X,O,O,O,O,
+                O,O,O,O,X,O,O,O,O,O,O,X,O,O,O,O,
+                O,O,O,O,O,X,O,O,O,O,X,O,O,O,O,O,
+                O,O,O,O,O,O,X,O,O,X,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,X,X,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O };
+
+                for (int i=0; i < 256; i++) pattern[i] = patternAlt[i];
+            }
+            break;
+                
+            case 6:
+            {
+                bool patternAlt[] = {
+                O,O,O,O,X,X,X,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,X,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,X,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,X,X,O,O,O,O,O,O,X,
+                O,O,O,O,O,O,X,O,O,X,O,O,O,X,O,X,
+                O,O,O,O,O,X,O,O,O,O,X,O,O,O,X,X,
+                O,O,O,O,X,O,O,O,O,O,O,X,O,O,O,O,
+                O,O,O,O,X,O,O,O,O,O,O,X,O,O,O,O,
+                X,X,O,O,O,X,O,O,O,O,X,O,O,O,O,O,
+                X,O,X,O,O,O,X,O,O,X,O,O,O,O,O,O,
+                X,O,O,O,O,O,O,X,X,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,O,X,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,X,O,O,O,O,O,O,
+                O,O,O,O,O,O,O,O,O,X,X,X,O,O,O,O };
+
+                for (int i=0; i < 256; i++) pattern[i] = patternAlt[i];
+            }
+            break;
+                
+        }
+
+        //Set up pattern
+        int offsetX = (renderer.getGridWidth() - 16) / 2;
+        int offsetY = (renderer.getGridHeight() - 16) / 2;
+        for(int y = 0; y < renderer.getGridHeight(); ++y)
+        {
+            if ( (y >= offsetY) && (y < offsetY+16) )
+            {
+                for(int x = 0; x < renderer.getGridWidth(); ++x)
+                { 
+                    if ( (x >= offsetX) && (x < offsetX+16) 
+                        && (pattern[(16 - 1 - y+offsetY)*16 + x-offsetX]) ) 
+                    {
+                        cells[x][y] |= CELL_ALIVE;
+                        renderer.setPixel(x, y, renderer.r, renderer.g, renderer.b);
+                        alive++;
+                    }
+                    else 
+                    {
+                        //Clear cells in pattern
+                        cells[x][y] &= ~CELL_ALIVE;
+                        renderer.setPixel(x, y, 0,0,0);
+                    }
+                }
+            }
+            else 
+            {
+                for(int x = 0; x < renderer.getGridWidth(); ++x)
+                { 
+                    //Clear cells outside pattern
+                    cells[x][y] &= ~CELL_ALIVE;
+                    renderer.setPixel(x, y, 0,0,0);
+                }
+            }
+        }
+    }
 
 }
 
@@ -253,16 +441,16 @@ void GameOfLife::initialiseGrid(uint8_t pattern)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void GameOfLife::applyChanges()
 {
-    uint8_t x, y, changes, i, j, gap;
+    uint8_t changes, gap;
     int8_t popChk,prevPopChk;
     
     changes = 0;
     bool compare2 = true;
     bool compare3 = true;
 
-    for(y = 0; y < renderer.getGridHeight(); ++y)
+    for(int y = 0; y < renderer.getGridHeight(); ++y)
     {
-        for(x = 0; x < renderer.getGridWidth(); ++x)
+        for(int x = 0; x < renderer.getGridWidth(); ++x)
         {
             //Update last 3 iterations history for this cell
             if ((cells[x][y] & CELL_PREV2) != 0)
@@ -342,10 +530,10 @@ void GameOfLife::applyChanges()
     bool gapCheck = false;
     for (gap = 4; gap < maxRepeatCycle+1; ++gap)
     {
-        for (i = 1; i < popHistorySize/gap; ++i)
+        for (int i = 1; i < popHistorySize/gap; ++i)
         {
         
-        for (j = 0; j < gap; ++j)
+        for (int j = 0; j < gap; ++j)
         {
             popChk = popCursor - 1 - (gap * i) - j;
             if (popChk < 0) popChk += popHistorySize;
