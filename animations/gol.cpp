@@ -1,9 +1,9 @@
 /**************************************************************************************************
- * This is an example to demonstrate using an animator class with the RGB matrix library
+ * This is an example to demonstrate using an animation class with the RGB matrix library
  * from https://github.com/hzeller/rpi-rgb-led-matrix
  *
  * Based on the public domain demo example file by Henner Zeller, and extended by
- * Paul Fretwell - aka 'Footleg' to use the animator classes written by Footleg with the RGBMatrix
+ * Paul Fretwell - aka 'Footleg' to use the animation classes written by Footleg with the RGBMatrix
  * library.
  * 
  * This is free software: you can redistribute it and/or modify
@@ -58,14 +58,14 @@ static void InterruptHandler(int signo) {
 class Animation : public ThreadedCanvasManipulator, public RGBMatrixRenderer {
     public:
         Animation(Canvas *m, int width, int height, int delay_ms, uint8_t fade_steps)
-            : ThreadedCanvasManipulator(m), RGBMatrixRenderer{width,height}, delay_ms_(delay_ms), animator(*this,fade_steps,delay_ms_)
+            : ThreadedCanvasManipulator(m), RGBMatrixRenderer{width,height}, delay_ms_(delay_ms), animation(*this,fade_steps,delay_ms_)
         {}
 
         virtual ~Animation(){}
 
         void Run() {
             while (running() && !interrupt_received) {
-                animator.runCycle();
+                animation.runCycle();
                 usleep(delay_ms_ * 1000); // ms
             }
         }
@@ -87,13 +87,13 @@ class Animation : public ThreadedCanvasManipulator, public RGBMatrixRenderer {
             usleep(delay_ms * 1000);
         }
 
-        virtual uint8_t random_uint(uint8_t a, uint8_t b) {
+        virtual uint16_t random_uint(uint16_t a, uint16_t b) {
             return a + rand()%(b-a);
         }
 
     private:
         int delay_ms_;
-        GameOfLife animator;
+        GameOfLife animation;
 };
 
 

@@ -59,7 +59,7 @@ class RGBMatrixRenderer
         virtual void showPixels() = 0;
         virtual void msSleep(int) = 0;
         virtual void outputMessage(char[]) = 0;
-        virtual uint8_t random_uint(uint8_t,uint8_t) = 0;
+        virtual uint16_t random_uint(uint16_t,uint16_t) = 0;
         void setRandomColour();
         int newPositionX(int,int,bool=true);
         int newPositionY(int,int,bool=true);

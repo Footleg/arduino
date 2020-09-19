@@ -128,9 +128,10 @@ void GameOfLife::runCycle()
         char msg[255];
         sprintf(msg, "Pattern terminated after %lu iterations (min: %lu, max: %lu): %s",
                 iterations, iterationsMin, iterationsMax, msgEnd);
-        renderer.outputMessage(msg);
+        if (iterations > 0)
+            renderer.outputMessage(msg);
 
-        initialiseGrid(0);
+        initialiseGrid(6);
         
     }
 
