@@ -1,15 +1,42 @@
-#include "fallingsand.h"
+/**************************************************************************************************
+ * Falling Sand simulation
+ * 
+ * This implementation was written as a reusable animator class where the RGB matrix hardware
+ * rendering class is passed in, so it can be used with any RGB array display by writing an 
+ * implementation of a renderer class to set pixels/LED colours on the hardware.
+ *
+ * Based on original code by https://github.com/PaintYourDragon published as the LED sand example 
+ * in the Adafruit Learning Guides here https://github.com/adafruit/Adafruit_Learning_System_Guides
+ * 
+ * Copyright (C) 2020 Paul Fretwell - aka 'Footleg'
+ * 
+ * This is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this software.  If not, see <http://www.gnu.org/licenses/>.
+ */#include "fallingsand.h"
 
 #include <iostream>
 #include <cmath>
 
         
 // default constructor
-FallingSand::FallingSand(RGBMatrixRenderer &renderer_, int16_t shake_)
-    : renderer(renderer_), shake(shake_)
+FallingSand::FallingSand(RGBMatrixRenderer &renderer_, int16_t shake_, uint16_t num_grains)
+    : renderer(renderer_)
 {
-    // Allocate memory
+    // Allocate memory for pixels array
     img = new uint8_t[renderer.getGridWidth() * renderer.getGridHeight()];
+
+    // Allocate memory for grains array
+    grain = new Grain[num_grains];
 
     // The 'sand' grains exist in an integer coordinate space that's 256X
     // the scale of the pixel grid, allowing them to move and interact at
@@ -18,29 +45,16 @@ FallingSand::FallingSand(RGBMatrixRenderer &renderer_, int16_t shake_)
     maxY = renderer.getGridHeight() * 256 - 1; // Maximum Y coordinate in grain space
 
     velCap = 256;
+    grainsAdded = 0;
+    numGrains = num_grains;
+    shake = shake_;
 
     //Initial random colour
     renderer.setRandomColour();
 
     //Clear img
-    uint16_t i,j;
-    for (i=0; i<renderer.getGridWidth() * renderer.getGridHeight(); i++) {
+    for (uint16_t i=0; i<renderer.getGridWidth() * renderer.getGridHeight(); i++) {
         img[i]=0;
-    }
-    for(i=0; i<N_GRAINS; i++) {  // For each sand grain...
-        do {
-            grain[i].x = renderer.random_uint(0,renderer.getGridWidth()  * 256); // Assign random position within
-            grain[i].y = renderer.random_uint(0,renderer.getGridHeight() * 256); // the 'grain' coordinate space
-            // Check if corresponding pixel position is already occupied...
-            for(j=0; (j<i) && (((grain[i].x / 256) != (grain[j].x / 256)) ||
-                                ((grain[i].y / 256) != (grain[j].y / 256))); j++);
-        } while(j < i); // Keep retrying until a clear spot is found
-        img[(grain[i].y / 256) * renderer.getGridWidth() + (grain[i].x / 256)] = renderer.random_uint(1,216); // Mark it
-char msg[100];
-sprintf(msg, "Grains placed %d,%d colour:%d\n", int(grain[i].x), int(grain[i].y), int(img[(grain[i].y / 256) * renderer.getGridWidth() + (grain[i].x / 256)]) );
-renderer.outputMessage(msg);
-
-        grain[i].vx = grain[i].vy = 0; // Initial velocity is zero
     }
 
 } //FallingSand
@@ -94,7 +108,7 @@ void FallingSand::runCycle()
     // ...and apply 2D accel vector to grain velocities...
     int32_t v2; // Velocity squared
     float   v;  // Absolute velocity
-    for(int16_t i=0; i<N_GRAINS; i++) {
+    for(int16_t i=0; i<numGrains; i++) {
         grain[i].vx += ax + renderer.random_uint(0,az2); // A little randomness makes
         grain[i].vy += ay + renderer.random_uint(0,az2); // tall stacks topple better!
         // Terminal velocity (in any direction) is 256 units -- equal to
@@ -130,7 +144,7 @@ if (i<0) {
     uint16_t        i, oldidx, newidx, delta;
     int16_t        newx, newy;
     
-    for(i=0; i<N_GRAINS; i++) {
+    for(i=0; i<numGrains; i++) {
         newx = grain[i].x + (grain[i].vx/32); // New position in grain space
         newy = grain[i].y + (grain[i].vy/32);
         if(newx > maxX) {               // If grain would go out of bounds
@@ -239,3 +253,28 @@ void FallingSand::setAcceleration(int16_t x, int16_t y)
     renderer.outputMessage(msg);
 }
 
+void FallingSand::addGrain(uint8_t id)
+{
+    //Place grains into array.
+    //id indicates grain colour (currently based on 6 values each per r,g,b channel
+    //so values from 1-215 represent colours)
+    uint16_t i = grainsAdded;
+    do {
+        grain[i].x = renderer.random_uint(0,renderer.getGridWidth()  * 256); // Assign random position within
+        grain[i].y = renderer.random_uint(0,renderer.getGridHeight() * 256); // the 'grain' coordinate space
+        // Check if corresponding pixel position is already occupied...
+    } while(img[(grain[i].y / 256) * renderer.getGridWidth() + (grain[i].x / 256)]); // Keep retrying until a clear spot is found
+    grainsAdded++;
+    grain[i].vx = grain[i].vy = 0; // Initial velocity is zero
+    img[(grain[i].y / 256) * renderer.getGridWidth() + (grain[i].x / 256)] = id; // Mark it
+
+char msg[100];
+sprintf(msg, "Grains placed %d,%d colour:%d\n", int(grain[i].x), int(grain[i].y), int(img[(grain[i].y / 256) * renderer.getGridWidth() + (grain[i].x / 256)]) );
+renderer.outputMessage(msg);
+
+}
+
+void FallingSand::setStaticPixel(uint16_t x, uint16_t y, uint8_t id)
+{
+    img[y * renderer.getGridWidth() + x] = id; // Mark it
+}

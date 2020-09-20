@@ -70,14 +70,31 @@ uint64_t micros()
 // using the syntax *this
 class Animation : public ThreadedCanvasManipulator, public RGBMatrixRenderer {
     public:
-        Animation(Canvas *m, int width, int height, int delay_ms, int accel_, int shake)
-            : ThreadedCanvasManipulator(m), RGBMatrixRenderer{width,height}, delay_ms_(delay_ms), animation(*this,shake), 
+        Animation(Canvas *m, int width, int height, int delay_ms, int accel_, int shake, int numGrains)
+            : ThreadedCanvasManipulator(m), RGBMatrixRenderer{width,height}, delay_ms_(delay_ms), animation(*this,shake,numGrains), 
               ax(0), ay(0)
         {
             accel = accel_;
             counter=1000;
             angle=-1;
             cycles = 100000;
+
+            //Create some static pixels
+            int id = 180;
+            for (int x=0; x<10;x++) {
+                animation.setStaticPixel(x+11,11,id);
+                animation.setStaticPixel(x+11,20,id);
+            }
+            for (int y=0; y<10;y++) {
+                animation.setStaticPixel(11,y+11,id);
+                animation.setStaticPixel(20,y+11,id);
+            }
+                     
+
+            //Add grains
+            for (int i=0; i<numGrains;i++) {
+                animation.addGrain(1 + rand()%215);
+            }
         }
 
         virtual ~Animation(){}
@@ -135,7 +152,7 @@ class Animation : public ThreadedCanvasManipulator, public RGBMatrixRenderer {
                 while((t = micros() - prevTime) < (100000L / MAX_FPS));
 //                fprintf(stderr,"Cycle time: %d\n", t );
                 prevTime = micros();
-                cycles = 2000000 / t;
+                cycles = 2500000 / t;
             }
         }
 
@@ -173,14 +190,15 @@ static int usage(const char *progname) {
             progname);
     fprintf(stderr, "Options:\n");
     fprintf(stderr,
-            "\t-m <msecs>                : Milliseconds pause between updates.\n"
-            "\t-t <seconds>              : Run for these number of seconds, then exit.\n"
-            "\t-g <seconds>              : Gravity force (0-1000).\n"
-            "\t-s <seconds>              : Random shake force (0-100).\n");
+            "\t-m <msecs>     : Milliseconds pause between updates.\n"
+            "\t-t <seconds>   : Run for these number of seconds, then exit.\n"
+            "\t-n <number>    : Number of grains of sand.\n"
+            "\t-g <number>    : Gravity force (0-100 is sensible, but takes higher).\n"
+            "\t-s <number>    : Random shake force (0-100 is sensible, but takes higher).\n");
 
     rgb_matrix::PrintMatrixFlags(stderr);
 
-    fprintf(stderr, "Example:\n\t%s -t 10 \n"
+    fprintf(stderr, "Example:\n\t%s -n 64 -g 10 -s 5 -t 10 \n"
             "Runs demo for 10 seconds\n", progname);
     return 1;
 }
@@ -191,6 +209,7 @@ int main(int argc, char *argv[]) {
     int scroll_ms = 10;
     int accel = 0;
     int shake = 0;
+    int numGrains = 4;
 
     srand(time(NULL));
  
@@ -209,7 +228,7 @@ int main(int argc, char *argv[]) {
     }
 
     int opt;
-    while ((opt = getopt(argc, argv, "dD:t:r:P:g:s:c:p:b:m:LR:")) != -1) {
+    while ((opt = getopt(argc, argv, "dD:t:r:P:g:s:c:n:p:b:m:LR:")) != -1) {
         switch (opt) {
         case 't':
         runtime_seconds = atoi(optarg);
@@ -217,6 +236,10 @@ int main(int argc, char *argv[]) {
 
         case 'm':
         scroll_ms = atoi(optarg);
+        break;
+
+        case 'n':
+        numGrains = atoi(optarg);
         break;
 
         case 'g':
@@ -285,7 +308,7 @@ int main(int argc, char *argv[]) {
     // The ThreadedCanvasManipulator objects are filling
     // the matrix continuously.
     ThreadedCanvasManipulator *image_gen = NULL;
-    image_gen = new Animation(canvas, canvas->width(), canvas->height(), scroll_ms, accel, shake);
+    image_gen = new Animation(canvas, canvas->width(), canvas->height(), scroll_ms, accel, shake, numGrains);
 
     // Set up an interrupt handler to be able to stop animations while they go
     // on. Note, each demo tests for while (running() && !interrupt_received) {},
