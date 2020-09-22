@@ -52,8 +52,6 @@
  * along with this software.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-//#define ARDUINO 10813  //DO NOT COMPILE WITH THIS DEFINE ENABLED! It is to help VSCODE spot code problems.
-
 #include "watchdef.h"
 #include <soc/rtc.h>
 //#include "esp_wifi.h"
@@ -63,7 +61,8 @@
 TTGOClass *ttgo; //Main watch class, used to access all watch features
 
 //Global constants and variables
-const uint16_t inactivityTimeout = 10000;    //Interval in msec after which the watch is put into low power mode (and screen turned off)
+const uint16_t timeRefreshInterval = 1000;  //Interval in msec between time screen refreshes
+const uint16_t inactivityTimeout = 20000;    //Interval in msec after which the watch is put into low power mode (and screen turned off)
 const uint16_t batteryCheckInterval = 30000; //Interval in msec between reads of the battery voltage
 
 //App name constants (makes the code much more readable)
@@ -76,9 +75,9 @@ const uint8_t APP_TIMESET   = 4;
 
 uint8_t activeApp = APP_TIMESHOW;   //Track which app is active
 bool active = true;                 //Flag to track if screen is active for updates/power saving
-uint32_t lastActiveTime = 0;        //Tracks time of last interaction from user (to enable sleep after inactivity)
-uint32_t nextUpdateTime = 0;        //TODO Move this into time app. Time which next display update should not occur before (avoids updating time display more than once per second)
-uint32_t lastBattChkTime = 0;       //Time when the battery level was last read
+unsigned long lastTimeRefresh = 0;  //Tracks time of last update of time on screen
+unsigned long lastActiveTime = 0;   //Tracks time of last interaction from user (to enable sleep after inactivity)
+unsigned long lastBattChkTime = 0;  //Time when the battery level was last read
 
 //Declare variables for all watch app classes here. These will be initialised in the setup function after the watch object has been created.
 AppTimeDisplay *appDisplayTime;
@@ -107,7 +106,8 @@ void setup() {
     //low power mode after the last interaction from the user.
     lastActiveTime = millis();
     lastBattChkTime = millis();
-    
+    lastTimeRefresh = millis();
+
     //Create time display app class. This app displays the main watch time screen.
     appDisplayTime = new AppTimeDisplay(ttgo);
     appDisplayTime->lastActiveTime = lastActiveTime;
@@ -142,8 +142,16 @@ void loop() {
                 case APP_TIMESHOW:
                     appDisplayTime->lastActiveTime = lastActiveTime;
                     //Check if we need to update the time display yet (no point in doing so more than once per second)
-                    if (nextUpdateTime < millis()) {
-                        nextUpdateTime = millis() + 1000;
+                    //Note: This method of checking avoids the check failing when millis overflows because the lastTimeRefresh
+                    //variable and millis() result are both unsigned long, so the difference will still be correct when
+                    //millis overflows back to zero, while lastTimeRefresh is close to overflowing
+                    //i.e. (0 - 4294967295) = 2 because the result also overflows.
+                    if (millis() - lastTimeRefresh > timeRefreshInterval) {
+                        //Serial output to aid debugging. You can delete it if you are happy with how things are working
+                        Serial.print("Time since last refresh: ");
+                        Serial.println(millis() - lastTimeRefresh);
+
+                        lastTimeRefresh = millis();
                         if (millis() - lastBattChkTime > batteryCheckInterval) {
                             appDisplayTime->batteryLevel = readBattery();
                             //Force a full refresh so battery level is updated on screen
@@ -151,12 +159,11 @@ void loop() {
                         }
                         else {
                             appDisplayTime->updateScreen(false); // Called every second but only update time every minute
-                            //TODO Make control of screen update frequency a job of the app class, not the main loop
                         }
                     }
                     else {
-                        //Pause to save processing
-                        delay(200);
+                        //Pause to save processing. Long enough to save cycles, but not so long we miss an update to the display
+                        delay(178); //Tuned this to just exceed the 1000 ms timeRefreshInterval following the 5th delay
                     }
                     break;
                

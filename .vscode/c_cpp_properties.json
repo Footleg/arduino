@@ -3,16 +3,16 @@
         {
             "name": "Win32",
             "includePath": [
-                "C:\\Users\\PFL1\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\**",
-                "C:\\Users\\PFL1\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\1.0.4\\**",
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "C:\\Users\\Footleg\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\1.0.4\\**",
+                "C:\\Users\\Footleg\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\**"
             ],
             "defines": [
                 "_DEBUG",
                 "UNICODE",
                 "_UNICODE"
             ],
-            "compilerPath": "C:\\Program Files\\mingw-w64\\x86_64-8.1.0-posix-seh-rt_v6-rev0\\mingw64\\bin\\gcc.exe",
+            "compilerPath": "C:\\Program Files (x86)\\mingw-w64\\i686-8.1.0-posix-dwarf-rt_v6-rev0\\mingw32\\bin\\gcc.exe",
             "cStandard": "gnu18",
             "cppStandard": "gnu++14",
             "intelliSenseMode": "gcc-x64",
@@ -31,7 +31,7 @@
                 "UNICODE",
                 "_UNICODE"
             ],
-            "compilerPath": "C:\\Program Files\\mingw-w64\\x86_64-8.1.0-posix-seh-rt_v6-rev0\\mingw64\\bin\\gcc.exe",
+            "compilerPath": "C:\\Program Files (x86)\\mingw-w64\\i686-8.1.0-posix-dwarf-rt_v6-rev0\\mingw32\\bin\\gcc.exe",
             "cStandard": "gnu18",
             "cppStandard": "gnu++14",
             "intelliSenseMode": "gcc-x64"

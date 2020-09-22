@@ -6,15 +6,6 @@
 // This version displays the battery level, and the inactivity counter to help
 // you see how this is working. Touching the screen resets the inactivity counter. 
 
-#if defined(ARDUINO) && ARDUINO >= 100
-#include "Arduino.h"
-#elif defined(ARDUINO)
-#include "WProgram.h"
-#else
-#include <stdint.h>
-#include <stdio.h>
-#endif
-
 #include "watchdef.h"
 #include <time.h>
 #include <soc/rtc.h>
@@ -62,6 +53,7 @@ class AppTimeDisplay {
 
             //Do full update every second regardless, in order to update hh and mm.
             if (fullUpdate || ss == 0) {
+                Serial.println("Time app: full screen refresh");
                 //Show battery level
                 ttgo->tft->setTextColor(TFT_BLACK, TFT_WHITE); 
                 ttgo->tft->setCursor( 100, 2);
@@ -71,8 +63,6 @@ class AppTimeDisplay {
                 ttgo->tft->print("% ");
 
                 //Display time
-                //ttgo->tft->setTextColor(0x39C4, TFT_BLACK); // Set desired color
-                //ttgo->tft->drawString("88:88", xpos, ypos, font);
                 ttgo->tft->setTextColor(colour, TFT_BLACK); 
                 if (hh < 10) xpos += ttgo->tft->drawChar('0', xpos, ypos, font);
                 xpos += ttgo->tft->drawNumber(hh, xpos, ypos, font);
@@ -88,8 +78,19 @@ class AppTimeDisplay {
                 if (ss < 10) xpos += ttgo->tft->drawChar('0', xpos, ypos+ssDigitVOffset, font);
                 ttgo->tft->drawNumber(ss, xpos, ypos+ssDigitVOffset, font);
                 ttgo->tft->setTextSize(hhDigitSize);
+
+                //Display date
+                ttgo->tft->setTextSize(3);
+                ttgo->tft->setCursor( 40, 210);
+                ttgo->tft->print(dday);
+                ttgo->tft->print("/");
+                ttgo->tft->print(mmonth);
+                ttgo->tft->print("/");
+                ttgo->tft->print(yyear);
             }
             else {
+                Serial.println("Time app: seconds refresh");
+                //Just update seconds
                 ttgo->tft->setTextColor(colour, TFT_BLACK);
                 ttgo->tft->setTextSize(ssDigitSize);
                 xpos = xss;
@@ -106,16 +107,7 @@ class AppTimeDisplay {
                 }
             }
 
-            //Display date
-            ttgo->tft->setTextSize(3);
-            ttgo->tft->setCursor( 40, 210);
-            ttgo->tft->print(dday);
-            ttgo->tft->print("/");
-            ttgo->tft->print(mmonth);
-            ttgo->tft->print("/");
-            ttgo->tft->print(yyear);
-
-            //Show active time
+            //Show Inactive time
             ttgo->tft->setTextSize(2);
             ttgo->tft->setTextColor(TFT_BLUE, TFT_BLACK);
             ttgo->tft->setCursor( 5, 170);
@@ -123,6 +115,6 @@ class AppTimeDisplay {
             int activeTime = (millis()-lastActiveTime)/1000;
             if (activeTime < 10) ttgo->tft->print(0);
             ttgo->tft->print(activeTime);
-          
+            
         }
 };
