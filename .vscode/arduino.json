@@ -1,0 +1,7 @@
+{
+    "board": "esp32:esp32:ttgo-t-watch",
+    "configuration": "PSRAM=enabled,PartitionScheme=default,UploadSpeed=2000000,DebugLevel=none",
+    "port": "COM4",
+    "output": "../ArduinoOutput",
+    "sketch": "T-Watch-2000\\T-Watch-2000.ino"
+}

@@ -42,10 +42,13 @@
  * along with this software.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "config.h"
+//#define ARDUINO 10813
+
+#include "watchdef.h"
 #include <soc/rtc.h>
-#include "esp_wifi.h"
-#include "esp_sleep.h"
+//#include "esp_wifi.h"
+//#include "esp_sleep.h"
+#include "displayTime.cpp"
 
 TTGOClass *ttgo;
 
@@ -57,38 +60,39 @@ uint32_t lastActiveTime = 0;  //Tracks time of last interaction from user (to en
 uint32_t nextUpdateTime = 0;  //Time which next display update should not occur before (avoids updating time display more than once per second)
 uint32_t lastBattChkTime = 0; //Time when the battery level was last read
 
-uint8_t hh, mm, ss, mmonth, dday; // H, M, S variables
-uint16_t yyear; // Year is 16 bit int
-
-int batteryLevel = 0;
+AppTimeDisplay *appDisplayTime;
 
 void setup() {
-  Serial.begin(19200); //Serial port uses power, so comment out unless debugging
+    Serial.begin(19200); //Serial port maybe uses power? Suggest comment out unless debugging
 
-  ttgo = TTGOClass::getWatch();
-  ttgo->begin();
-  ttgo->tft->setTextFont(1);
-  ttgo->tft->fillScreen(TFT_BLACK);
-  ttgo->tft->setTextColor(TFT_YELLOW, TFT_BLACK); // Note: the new fonts do not draw the background colour
-  
-  //Initialize lvgl
-  ttgo->lvgl_begin();
+    ttgo = TTGOClass::getWatch();
+    ttgo->begin();
+    ttgo->tft->setTextFont(1);
+    ttgo->tft->fillScreen(TFT_BLACK);
+    ttgo->tft->setTextColor(TFT_YELLOW, TFT_BLACK); // Note: the new fonts do not draw the background colour
+    
+    //Initialize lvgl
+    ttgo->lvgl_begin();
 
-  //Check if the RTC clock matches, if not, use compile time
-  ttgo->rtc->check();
+    //Check if the RTC clock matches, if not, use compile time
+    ttgo->rtc->check();
 
-  //Synchronize time to system time
-  ttgo->rtc->syncToSystem();
+    //Synchronize time to system time
+    ttgo->rtc->syncToSystem();
 
-  //Initialise action trackers
-  lastActiveTime = millis();
-  lastBattChkTime = millis();
-  
-  //Read battery before first display update
-  batteryLevel = readBattery();
-  
-  displayTime(true); // Our GUI to show the time
-  ttgo->openBL(); // Turn on the backlight
+    //Initialise action trackers
+    lastActiveTime = millis();
+    lastBattChkTime = millis();
+    
+    //Create time display class
+    appDisplayTime = new AppTimeDisplay(ttgo);
+    appDisplayTime->lastActiveTime = lastActiveTime;
+    //Read battery before first display update
+    appDisplayTime->batteryLevel = readBattery();
+
+    appDisplayTime->displayTime(true); //Update display to show the time
+
+    ttgo->openBL(); // Turn on the backlight
 
 }
 
@@ -100,18 +104,20 @@ void loop() {
     if (millis() - lastActiveTime > inactivityTimeout) {
       //Put into low energy mode
       low_energy();
+      //Serial.print("ARDUINO define=");
+      //Serial.println(ARDUINO);
     }
     else {
       //Update display
       if (nextUpdateTime < millis()) {
         nextUpdateTime = millis() + 1000;
         if (millis() - lastBattChkTime > batteryCheckInterval) {
-          batteryLevel = readBattery();
+          appDisplayTime->batteryLevel = readBattery();
           //Force a full refresh so battery level is updated on screen
-          displayTime(true); 
+          appDisplayTime->displayTime(true); 
         }
         else {
-          displayTime(ss == 0); // Call every second but only update time every minute
+          appDisplayTime->displayTime(false); // Call every second but only update time every minute
         }
       }
     }
@@ -153,8 +159,9 @@ void loop() {
 
     //App returned control to main loop, or just woke up from sleep
     lastActiveTime = millis(); //Reset lastActiveTime tracker
+    appDisplayTime->lastActiveTime = lastActiveTime;
     //Redraw display in full as last running app had taken over the screen
-    displayTime(true); 
+    appDisplayTime->displayTime(true); 
   }
 }
 
@@ -208,6 +215,7 @@ void low_energy()
         ttgo->bma->enableStepCountInterrupt();
         active = true;
         lastActiveTime = millis();
+        appDisplayTime->lastActiveTime = lastActiveTime;
         Serial.println("AWAKE");
     }
 }

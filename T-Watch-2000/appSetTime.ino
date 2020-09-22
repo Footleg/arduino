@@ -2,7 +2,11 @@
 // DONE button press caused the code to add 13 to the highlighted
 // digit of the time.
 
+uint8_t hh, mm, ss, mmonth, dday; // H, M, S variables
+uint16_t yyear; // Year is 16 bit int
+
 void appSetTime() {
+  
   // Get the current info
   RTC_Date tnow = ttgo->rtc->getDateTime();
 
