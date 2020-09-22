@@ -32,7 +32,7 @@ class AppTimeDisplay {
         : ttgo(ttgo_)
         {}
 
-        void displayTime(bool fullUpdate){
+        void updateScreen(bool fullUpdate){
             uint8_t hh, mm, ss, mmonth, dday; // H, M, S variables
             uint16_t yyear; // Year is 16 bit int
             uint8_t xpos = 40; // Stating position for the display

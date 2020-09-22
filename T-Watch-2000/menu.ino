@@ -25,6 +25,8 @@ uint8_t modeMenu() {
 
       while (ttgo->getTouch(tx, ty)) {} // wait until you stop touching
 
+      lastActiveTime = millis(); //Reset lastActiveTime tracker so menu stays open another 10 seconds
+      
       if (y >= 160) { // you want the menu list shifted up
         mSelect += 1;
         if (mSelect == maxApp) mSelect = 0;
