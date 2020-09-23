@@ -20,31 +20,16 @@
  * along with this software.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <unistd.h>
+#include <chrono>
+#include <signal.h>
+
 #include "led-matrix.h"
 #include "threaded-canvas-manipulator.h"
 #include "pixel-mapper.h"
 #include "graphics.h"
 
 #include "fallingsand.h" //This is the animation class used to generate output for the display
-
-#include <assert.h>
-#include <getopt.h>
-#include <limits.h>
-#include <math.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <chrono>
-
-#include <algorithm>
-
-using std::min;
-using std::max;
-
-#define TERM_ERR  "\033[1;31m"
-#define TERM_NORM "\033[0m"
 
 using namespace rgb_matrix;
 
@@ -74,12 +59,15 @@ class Animation : public ThreadedCanvasManipulator, public RGBMatrixRenderer {
             : ThreadedCanvasManipulator(m), RGBMatrixRenderer{width,height}, delay_ms_(delay_ms), animation(*this,shake,numGrains), 
               ax(0), ay(0)
         {
+            
             accel = accel_;
             counter=1000;
             angle=-1;
             cycles = 100000;
 
             //Create some static pixels
+
+
             int id = 180;
             for (int x=0; x<10;x++) {
                 animation.setStaticPixel(x+11,11,id);
@@ -89,14 +77,17 @@ class Animation : public ThreadedCanvasManipulator, public RGBMatrixRenderer {
                 animation.setStaticPixel(11,y+11,id);
                 animation.setStaticPixel(20,y+11,id);
             }
-                     
+            animation.setStaticPixel(15,11,0);
+            animation.setStaticPixel(16,11,0);
+            animation.setStaticPixel(15,20,0);
+            animation.setStaticPixel(16,20,0);
 
             //Add grains
             for (int i=0; i<numGrains;i++) {
                 animation.addGrain(1 + rand()%215);
             }
         }
-
+        
         virtual ~Animation(){}
 
         void Run() {

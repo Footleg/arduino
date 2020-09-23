@@ -20,30 +20,15 @@
  * along with this software.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <unistd.h>
+#include <signal.h>
+
 #include "led-matrix.h"
 #include "threaded-canvas-manipulator.h"
 #include "pixel-mapper.h"
 #include "graphics.h"
 
 #include "golife.h" //This is the animation class used to generate output for the display
-
-#include <assert.h>
-#include <getopt.h>
-#include <limits.h>
-#include <math.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-#include <algorithm>
-
-using std::min;
-using std::max;
-
-#define TERM_ERR  "\033[1;31m"
-#define TERM_NORM "\033[0m"
 
 using namespace rgb_matrix;
 
