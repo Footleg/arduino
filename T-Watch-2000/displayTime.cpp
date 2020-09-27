@@ -1,10 +1,18 @@
-// The basic Time Display GUI
-// if you are just updating the colon and seconds, fullUpdate = false
-// if you want to update the complete display, fullUpdate = true
-// This helps reduce flicker
-//
-// This version displays the battery level, and the inactivity counter to help
-// you see how this is working. Touching the screen resets the inactivity counter. 
+/*
+ * App class to display the time
+ * 
+ * The GUI has deliberately been kept basic to show you the mechanics of
+ * updaing the display in a non-blocking app class. The updateScreen
+ * method takes a flag to control whether just the colon is flashed and the 
+ * seconds updated, or the complete watch face redrawn. The partial update
+ * helps reduce flicker on the display.
+ * 
+ * Also displays battery level, and the inactivity time counter to help
+ * you see how this is works. Touching the screen resets the inactivity counter
+ * in the main watch loop (not in this class). The current inactivity counter and
+ * battery level needs to be passed into the class via the public variables
+ * before calling updateScreen.
+ */ 
 
 #include "watchdef.h"
 #include <time.h>
@@ -22,6 +30,8 @@ class AppTimeDisplay {
         AppTimeDisplay(TTGOClass *ttgo_) 
         : ttgo(ttgo_)
         {}
+
+        ~AppTimeDisplay(){}
 
         void updateScreen(bool fullUpdate){
             uint8_t hh, mm, ss, mmonth, dday; // H, M, S variables

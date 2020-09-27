@@ -57,195 +57,36 @@
 //#include "esp_wifi.h"
 //#include "esp_sleep.h"
 #include "displayTime.cpp"
+#include "menu.cpp"
+#include "appSetTime.cpp"
+#include "appSetDate.cpp"
 
 TTGOClass *ttgo; //Main watch class, used to access all watch features
 
 //Global constants and variables
 const uint16_t timeRefreshInterval = 1000;  //Interval in msec between time screen refreshes
-const uint16_t inactivityTimeout = 20000;    //Interval in msec after which the watch is put into low power mode (and screen turned off)
-const uint16_t batteryCheckInterval = 30000; //Interval in msec between reads of the battery voltage
+const uint16_t inactivityTimeout = 15000;    //Interval in msec after which the watch is put into low power mode (and screen turned off)
+const uint32_t batteryCheckInterval = 120000; //Interval in msec between reads of the battery voltage
 
 //App name constants (makes the code much more readable)
 const uint8_t APP_TIMESHOW  = 0;
 const uint8_t APP_MENU      = 255; //App not selectable from menu, it is the menu :)
 const uint8_t APP_ACCELDEMO = 1;
 const uint8_t APP_BATTINFO  = 2;
-const uint8_t APP_TOUCHDEMO = 3;
-const uint8_t APP_TIMESET   = 4;
+const uint8_t APP_SETDATE = 3;
+const uint8_t APP_SETTIME   = 4;
 
 uint8_t activeApp = APP_TIMESHOW;   //Track which app is active
 bool active = true;                 //Flag to track if screen is active for updates/power saving
-unsigned long lastTimeRefresh = 0;  //Tracks time of last update of time on screen
-unsigned long lastActiveTime = 0;   //Tracks time of last interaction from user (to enable sleep after inactivity)
-unsigned long lastBattChkTime = 0;  //Time when the battery level was last read
+unsigned long lastTimeRefresh = 0;       //Tracks time of last update of time on screen
+unsigned long lastActiveTime = 0;        //Tracks time of last interaction from user (to enable sleep after inactivity)
+uint32_t lastBattChkTime = 0;       //Time when the battery level was last read
 
 //Declare variables for all watch app classes here. These will be initialised in the setup function after the watch object has been created.
 AppTimeDisplay *appDisplayTime;
-
-void setup() {
-    Serial.begin(19200); //Serial port maybe uses power? Suggest comment out unless debugging
-
-    //Initialise watch hardware class, and clear screen
-    ttgo = TTGOClass::getWatch();
-    ttgo->begin();
-    ttgo->tft->setTextFont(1);
-    ttgo->tft->fillScreen(TFT_BLACK);
-    ttgo->tft->setTextColor(TFT_YELLOW, TFT_BLACK); // Note: the new fonts do not draw the background colour
-    
-    //Initialize lvgl
-    ttgo->lvgl_begin();
-
-    //Check if the RTC clock matches, if not, use compile time
-    ttgo->rtc->check();
-
-    //Synchronize time to system time
-    ttgo->rtc->syncToSystem();
-
-    //Initialise action tracker variables. These are used to determine when it is time to
-    //perform actions which only need to happen periodically. e.g. Putting the watch into
-    //low power mode after the last interaction from the user.
-    lastActiveTime = millis();
-    lastBattChkTime = millis();
-    lastTimeRefresh = millis();
-
-    //Create time display app class. This app displays the main watch time screen.
-    appDisplayTime = new AppTimeDisplay(ttgo);
-    appDisplayTime->lastActiveTime = lastActiveTime;
-    //Read battery level before first display update
-    appDisplayTime->batteryLevel = readBattery();
-
-    appDisplayTime->updateScreen(true); //Update display to show the time
-
-    ttgo->openBL(); // Turn on the backlight
-
-}
-
-/**************************************************************************************************
- * Main Loop
- * 
- * This controls the watch power saving mode/sleep mode and tracks which app currently has control
- * of the screen. It is also responsible for any 'always active' background tasks, such as counting
- * steps, monitoring for touch screen interaction from the user
- *************************************************************************************************/
-void loop() {
-
-    //Update display if watch is not in sleep mode (power saving mode)
-    if (active) {
-        // Check if inactivity timeout reached
-        if (millis() - lastActiveTime > inactivityTimeout) {
-            //Put into low energy mode
-            low_energy();
-        }
-        else {
-            //Update display
-            switch(activeApp) {
-                case APP_TIMESHOW:
-                    appDisplayTime->lastActiveTime = lastActiveTime;
-                    //Check if we need to update the time display yet (no point in doing so more than once per second)
-                    //Note: This method of checking avoids the check failing when millis overflows because the lastTimeRefresh
-                    //variable and millis() result are both unsigned long, so the difference will still be correct when
-                    //millis overflows back to zero, while lastTimeRefresh is close to overflowing
-                    //i.e. (0 - 4294967295) = 2 because the result also overflows.
-                    if (millis() - lastTimeRefresh > timeRefreshInterval) {
-                        //Serial output to aid debugging. You can delete it if you are happy with how things are working
-                        Serial.print("Time since last refresh: ");
-                        Serial.println(millis() - lastTimeRefresh);
-
-                        lastTimeRefresh = millis();
-                        if (millis() - lastBattChkTime > batteryCheckInterval) {
-                            appDisplayTime->batteryLevel = readBattery();
-                            //Force a full refresh so battery level is updated on screen
-                            appDisplayTime->updateScreen(true); 
-                        }
-                        else {
-                            appDisplayTime->updateScreen(false); // Called every second but only update time every minute
-                        }
-                    }
-                    else {
-                        //Pause to save processing. Long enough to save cycles, but not so long we miss an update to the display
-                        delay(178); //Tuned this to just exceed the 1000 ms timeRefreshInterval following the 5th delay
-                    }
-                    break;
-               
-                case APP_MENU:
-                    //Get next active app
-                    activeApp = modeMenu();
-                    lastActiveTime = millis(); //Reset lastActiveTime tracker
-                    lastBattChkTime = 0; //Reset this to force full display refresh if returning to clock display
-                    break;
-                
-                case APP_ACCELDEMO:
-                    //Some original apps take full control, so call them then revert to time app
-                    appAccel();
-                    activeApp = APP_TIMESHOW;
-                    lastActiveTime = millis(); //Reset lastActiveTime tracker
-                    lastBattChkTime = 0; //Reset this to force full display refresh
-                    break;
-                
-                case APP_BATTINFO:
-                    //Some original apps take full control, so call them then revert to time app
-                    appBattery();
-                    activeApp = APP_TIMESHOW;
-                    lastActiveTime = millis(); //Reset lastActiveTime tracker
-                    lastBattChkTime = 0; //Reset this to force full display refresh
-                    break;
-                
-                case APP_TOUCHDEMO:
-                    //Some original apps take full control, so call them then revert to time app
-                    appTouch();
-                    activeApp = APP_TIMESHOW;
-                    lastActiveTime = millis(); //Reset lastActiveTime tracker
-                    lastBattChkTime = 0; //Reset this to force full display refresh
-                    break;
-                
-                case APP_TIMESET:
-                    //Some original apps take full control, so call them then revert to time app
-                    appSetTime();
-                    activeApp = APP_TIMESHOW;
-                    lastActiveTime = millis(); //Reset lastActiveTime tracker
-                    lastBattChkTime = 0; //Reset this to force full display refresh
-                    break;
-                
-             }
-        }
-    }
-
-    //Check for touch screen interaction whether in sleep mode or not (so watch can be woken up from sleep)
-    int16_t x, y;
-    if (ttgo->getTouch(x, y)) {
-        while (ttgo->getTouch(x, y)) {} // wait for user to release
-
-        //Check if watch is in low power mode
-        if (!active) {
-            //Just wake up the watch if asleep
-            wake_up(); 
-            lastActiveTime = millis(); //Reset lastActiveTime tracker
-
-            //Active app will update screen on next pass around loop, so
-            //only take actions here for apps which need special action
-            //after sleep
-            switch(activeApp) {
-                case APP_MENU:
-                case APP_TIMESET:
-                    //These apps should exit if watch was asleep
-                    activeApp = APP_TIMESHOW; 
-                    break;
-            }
-        }
-        else {
-            //Watch was already awake, so take action based on active app
-            switch(activeApp) {
-                case APP_TIMESHOW:
-                    //Screen touch in time show app, activate menu
-                    activeApp = APP_MENU;
-                    break;
-            }
-        }
-    }
-
-    //Do any other always active background tasks here
-    //e.g. Increment step counter
-}
+AppMainMenu *appMainMenu;
+AppSetDate *appSetDate;
+AppSetTime *appSetTime;
 
 int readBattery() 
 {
@@ -308,4 +149,178 @@ void wake_up()
     lastActiveTime = millis();
 
     Serial.println("AWAKE");
+}
+
+void setup() {
+    Serial.begin(9600); //Serial port maybe uses power? Suggest comment out unless debugging
+
+    //Initialise watch hardware class, and clear screen
+    ttgo = TTGOClass::getWatch();
+    ttgo->begin();
+    ttgo->tft->setTextFont(1);
+    ttgo->tft->fillScreen(TFT_BLACK);
+    ttgo->tft->setTextColor(TFT_YELLOW, TFT_BLACK); // Note: the new fonts do not draw the background colour
+    
+    //Initialize lvgl
+    ttgo->lvgl_begin();
+
+    //Check if the RTC clock matches, if not, use compile time
+    ttgo->rtc->check();
+
+    //Synchronize time to system time
+    ttgo->rtc->syncToSystem();
+
+    //Initialise action tracker variables. These are used to determine when it is time to
+    //perform actions which only need to happen periodically. e.g. Putting the watch into
+    //low power mode after the last interaction from the user.
+    lastActiveTime = millis();
+    lastBattChkTime = millis();
+    lastTimeRefresh = millis();
+
+    //Create time display app class. This app displays the main watch time screen.
+    appDisplayTime = new AppTimeDisplay(ttgo);
+    appDisplayTime->lastActiveTime = lastActiveTime;
+    //Read battery level before first display update
+    appDisplayTime->batteryLevel = readBattery();
+
+    appDisplayTime->updateScreen(true); //Update display to show the time
+
+    //Create other app classes
+    appMainMenu = new AppMainMenu(ttgo, inactivityTimeout);
+    appSetTime = new AppSetTime(ttgo, inactivityTimeout);
+    appSetDate = new AppSetDate(ttgo, inactivityTimeout);
+
+    ttgo->openBL(); // Turn on the backlight
+
+}
+
+/**************************************************************************************************
+ * Main Loop
+ * 
+ * This controls the watch power saving mode/sleep mode and tracks which app currently has control
+ * of the screen. It is also responsible for any 'always active' background tasks, such as counting
+ * steps, monitoring for touch screen interaction from the user
+ *************************************************************************************************/
+void loop() {
+    uint8_t displayingApp = activeApp;
+
+    //Update display if watch is not in sleep mode (power saving mode)
+    if (active) {
+        // Check if inactivity timeout reached
+        if (millis() - lastActiveTime > inactivityTimeout) {
+            //Put into low energy mode
+            low_energy();
+        }
+        else {
+            //Update display
+            switch(activeApp) {
+                case APP_TIMESHOW:
+                    appDisplayTime->lastActiveTime = lastActiveTime;
+                    //Check if we need to update the time display yet (no point in doing so more than once per second)
+                    //Note: This method of checking avoids the check failing when millis overflows because the lastTimeRefresh
+                    //variable and millis() result are both unsigned long, so the difference will still be correct when
+                    //millis overflows back to zero, while lastTimeRefresh is close to overflowing
+                    //i.e. (0 - 4294967295) = 2 because the result also overflows.
+                    if (millis() - lastTimeRefresh > timeRefreshInterval) {
+                        //Serial output to aid debugging. You can delete it if you are happy with how things are working
+                        Serial.print("Time since last refresh: ");
+                        Serial.println(millis() - lastTimeRefresh);
+
+                        lastTimeRefresh = millis();
+                        if (millis() - lastBattChkTime > batteryCheckInterval) {
+                            appDisplayTime->batteryLevel = readBattery();
+                            //Force a full refresh so battery level is updated on screen
+                            appDisplayTime->updateScreen(true); 
+                        }
+                        else {
+                            appDisplayTime->updateScreen(false); // Called every second but only update time every minute
+                        }
+                    }
+                    else {
+                        //Pause to save processing. Long enough to save cycles, but not so long we miss an update to the display
+                        delay(178); //Tuned this to just exceed the 1000 ms timeRefreshInterval following the 5th delay
+                    }
+                    break;
+               
+                case APP_MENU:
+                    //Get next active app
+                    activeApp = appMainMenu->modeMenu();
+                    break;
+                
+                case APP_ACCELDEMO:
+                    //Some original apps take full control, so call them then revert to time app
+                    appAccel();
+                    activeApp = APP_TIMESHOW;
+                    break;
+                
+                case APP_BATTINFO:
+                    //Some original apps take full control, so call them then revert to time app
+                    appBattery();
+                    activeApp = APP_TIMESHOW;
+                    break;
+                
+                case APP_SETDATE:
+                    //Some original apps take full control, so call them then revert to time app
+                    appSetDate->showApp();
+                    activeApp = APP_TIMESHOW;
+                    break;
+                
+                case APP_SETTIME:
+                    //Some original apps take full control, so call them then revert to time app
+                    appSetTime->showApp();
+                    activeApp = APP_TIMESHOW;
+                    break;
+                
+             }
+        }
+    }
+
+    //Check for touch screen interaction whether in sleep mode or not (so watch can be woken up from sleep)
+    int16_t tsx, tsy, tex, tey; //x,y for touch start and touch end
+    if (ttgo->getTouch(tsx, tsy)) {
+        while (ttgo->getTouch(tex, tey)) {} // wait for user to release
+
+        //Check if watch is in low power mode
+        if (!active) {
+            //Determine if touch was upward sweep over ~90% of display
+            Serial.print("Touch sweep: ");
+            Serial.println(tsy-tey);
+            if (tsy-tey > 200) {
+                //Wake up the watch
+                wake_up(); 
+                lastActiveTime = millis(); //Reset lastActiveTime tracker
+
+                //Active app will update screen on next pass around loop, so
+                //only take actions here for apps which need special action
+                //after sleep
+                switch(activeApp) {
+                    case APP_MENU:
+                    case APP_SETTIME:
+                        //These apps should exit if watch was asleep
+                        activeApp = APP_TIMESHOW; 
+                        break;
+                }
+            }
+        }
+        else {
+            //Watch was already awake, so take action based on active app
+            switch(activeApp) {
+                case APP_TIMESHOW:
+                    //Screen touch in time show app, activate menu
+                    activeApp = APP_MENU;
+                    break;
+            }
+        }
+    }
+
+    //Reset screen if app has changed
+    if (displayingApp != activeApp) {
+        //Blank screen
+        ttgo->tft->fillScreen(TFT_BLACK);
+        lastActiveTime = millis(); //Reset lastActiveTime tracker
+        lastBattChkTime -= batteryCheckInterval; //Reset this to force full time display refresh
+    }
+
+    //Do any other always active background tasks here
+    //e.g. Increment step counter
 }
