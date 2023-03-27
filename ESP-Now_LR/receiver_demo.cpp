@@ -1,15 +1,73 @@
-// ESP-Now communication based on tutorial at https://RandomNerdTutorials.com/esp-now-two-way-communication-esp32/
+/*
+  Example using ESP-Now with the LR protocol for low latency realtime communication between 
+  a pair of ESP32 boards over distances of at least 124m. 
+  
+  This receiver example takes data messages representing the inputs from a 3-axis joystick with 
+  a button. So the data structure contains 3 floats representing the x, y and z axis postitions 
+  (z is a twist action on these joysticks), and a byte for the button. We are only using a single 
+  bit for the button so the same code could handle 8 buttons, each using a different bit in the 
+  unsigned 8 bit int. The floats are set between -1.0 and 1.0 to represent the full range of 
+  movement for each axis.
 
+  To display the incoming data visually, this demo uses a 241 neopixel disk. You can use any
+  neopixel strip or array to test with, but the position display will only make sense on a disk
+  or spiral of 241 neopixels where the centre pixel is at the end of the chain. This demo will
+  also work fine without any neopixels connected as the data is output on the serial console.
+
+  To indicate whether a transmitter is connected, the time of the last received message is tracked
+  and if > 2 seconds has passed since the last message then a flag is set to indicate the program is
+  not under control. (Think of a robot being remote controlled, where we treat it as out of control
+  if no instructions are received for over 2 seconds. If that happened you would want to stop the
+  motors so it does not run away if it lost connection. Or maybe if a flying robot, trigger it to
+  hover, begin a safe descent or move towards home to try and re-establish a connection). When in
+  the out-of-control state, this demo program flashes a bright red circle pattern on the neopixel
+  disk. When under control, a spot is displayed to indicate the position of the x + y axes, with
+  the z axis setting the LED colour. Pressing the button on the joystick causes an expanding 
+  circular pulse animation to be displayed in the current colour set on the z axis.
+
+  Testing with a pair of generic ESP32 WROOM32 boards with built in PCB antennas the maximum
+  range for reliable communication was 27 metres using ESP-Now without the LR protocol configured.
+  Adding the LR protocol config to both the transmitter and receiver code increased the range to
+  65m. Switching to an ESP32 WROOM32-U board with small external stick antenna increased the range
+  to 124m (the receiver was still an on-board PCB antenna). This was not the limit, just the 
+  furthest distance I could get line of site to confirm my receiver was responding during the test.
+  The same 124m range was achieved with a little SEEED XIAO ESP32-C board using a small flat 
+  external antenna as the transmitter. The maximum range has not been determined.
+
+  Released under the MIT License
+
+  Copyright (c) 2023 Paul 'Footleg' Fretwell  https://github.com/Footleg
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+
+  This is an extension of ideas presented in a tutorial published at 
+  https://RandomNerdTutorials.com/esp-now-two-way-communication-esp32/
+
+*/
 #include <esp_now.h>
 #include <esp_wifi.h>
-#include "WiFi.h"
+#include <WiFi.h>
 #include "pixel_disk.cpp"
  
 #define ANIMATION_INTERVAL  50 // Milliseconds interval between animation frame updates
-#define FLASH_INTERVAL  500 // Milliseconds interval between animation frame updates
-#define PIN_NEO_PIXEL        27 // Arduino pin that connects to NeoPixel
-
-//WROVER MAC: 08:3A:F2:B1:C1:E4
+#define FLASH_INTERVAL     500 // Milliseconds interval between animation frame updates
+#define PIN_NEO_PIXEL       27 // Arduino pin that connects to NeoPixels data in
 
 uint32_t lastDataTime;
 uint32_t lastAnimationUpdate;
@@ -20,8 +78,8 @@ uint8_t ringFlash = 0;
 uint8_t noDataToggle = 0;
 bool underControl = true;
  
-//Structure example to send data
-//Must match the receiver structure
+// Data structure used to receive data messages.
+// Must match the data structure used on the transmitter to send messages.
 typedef struct struct_message {
     float x1;
     float y1;
@@ -32,28 +90,32 @@ typedef struct struct_message {
 // Create a struct_message to hold incoming data
 struct_message incomingReadings;
 
-// esp_now_peer_info_t peerInfo;
-
-// Callback when data is received
+// Callback function. Will be called when data is received
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) 
 {
+    // Copy the data from the message into the data structure
     memcpy(&incomingReadings, incomingData, sizeof(incomingReadings));
 
+    // Set flag to show our receiver is still connected
     underControl = true;
+
+    // Track the time of the last message received
     lastDataTime = millis();
 
+    // Display the incoming data in the serial console
     Serial.print("Bytes received: ");
     Serial.print(len);
-    Serial.print("Joystick1: ");
+    Serial.print(" Data: ");
     Serial.print(incomingReadings.x1);
     Serial.print(", ");
     Serial.print(incomingReadings.y1);
     Serial.print(", ");
-    Serial.println(incomingReadings.z1);
+    Serial.print(incomingReadings.z1);
     Serial.print(", ");
     Serial.println(incomingReadings.b1);
 }
 
+// Convert a joystick axis position to a neopixel colour
 void colourFromZ(float z, uint8_t &r, uint8_t &g, uint8_t &b )
 {
     float za = abs(z);
@@ -84,12 +146,15 @@ void colourFromZ(float z, uint8_t &r, uint8_t &g, uint8_t &b )
     }
 }
 
+
 void setup(){
     Serial.begin(115200);
     Serial.println("Initializing ESP-NOW receiver");
 
     // Set device as a Wi-Fi Station
     WiFi.mode(WIFI_STA);
+  
+    // Set protocol to LR for longer range (at lower data rate)
     esp_wifi_set_protocol( WIFI_IF_AP, WIFI_PROTOCOL_LR );
 
     // Init ESP-NOW
@@ -98,29 +163,27 @@ void setup(){
         return;
     }
 
-    // Register for a callback function that will be called when data is received
+    // Register the a callback function that will be called when data is received
     esp_now_register_recv_cb(OnDataRecv);
 
+    // Initialise time trackers
     lastDataTime = millis();
     lastAnimationUpdate = millis();
     lastFlashingAnimationUpdate = millis();
-
-    incomingReadings.z1 = -0.6;
 }
-  
+
+
 void loop(){
 
     if (millis() - lastDataTime > 2000) {
-        // No data communcation, so not under control
+        // No data communication for 2 seconds, so not under control
         underControl = false;
 
         // Update flash animation when interval has elapsed
         if (millis() - lastFlashingAnimationUpdate >  FLASH_INTERVAL) {
-            Serial.print("No data in last 2 seconds. Time: ");
-            Serial.print(millis());
-            Serial.print(" Last anim: ");
-            Serial.print(millis() - lastFlashingAnimationUpdate);
-            Serial.print("ms ago. MAC: ");
+            // While not receiving data, output the MAC address (needed by the transmitter
+            // program) to the serial console, and flash the neopixels red.
+            Serial.print("No data in last 2 seconds. MAC: ");
             Serial.println(WiFi.macAddress());
             lastFlashingAnimationUpdate = millis();
 
@@ -140,6 +203,10 @@ void loop(){
         }
     }
     else if (underControl) {
+        // When under the control of a transmitter (connection has received data in the last 2 seconds)
+        // display the position of the joystick on the neopixels. The postions can be read at any time
+        // from the incomingReadings global variable (which is updated in the callback function when
+        // any data message is received).
         float angle,distance;
 
         // Update position display on pixel disk
@@ -234,7 +301,6 @@ void loop(){
             uint8_t r,g,b;
             colourFromZ(incomingReadings.z1,r,g,b);
             pixdisk.setPixelRing(ringFlash,r, g, b);
-            incomingReadings.b1 = 1; //TEST CODE, TO BE DELETED!
         }
 
         // Update any animations when interval has elapsed
@@ -245,26 +311,12 @@ void loop(){
             if (ringFlash < 9) {
                 ringFlash++;
             }
- 
         }
 
         pixdisk.show();
 
-        // Display debug info in Serial Monitor
-        Serial.print("Elasped: ");
-        Serial.print(millis() - lastDataTime);
-        Serial.print("ms, Ring Pulse: ");
-        Serial.print(ringFlash);
-        Serial.print(" Joystick1: ");
-        Serial.print(incomingReadings.x1);
-        Serial.print(", ");
-        Serial.print(incomingReadings.y1);
-        Serial.print(", ");
-        Serial.print(incomingReadings.z1);
-        Serial.print(" Button: ");
-        Serial.println(incomingReadings.b1);
     }
 
-    delay(5);     // off time
+    delay(5); // Allow time for callback function (may not be neccesary if it is interupt driven)
 
 }
